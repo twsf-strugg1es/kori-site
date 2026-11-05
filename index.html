@@ -1,0 +1,1231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kori — Impacting soon</title>
+<meta name="description" content="Kori is a Bangla word. It literally means doing, doing to make an impact, not just sitting there. Meaningful, useful technology for the AI era. Impacting soon.">
+<meta property="og:title" content="Kori — Impacting soon">
+<meta property="og:description" content="Meaningful, useful technology for the AI era. Not another copy. Impacting soon.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#171614">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230A0A0A'/%3E%3Ctext x='32' y='46' font-family='Georgia,serif' font-size='44' fill='%23F5F1E9' text-anchor='middle'%3Ek%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ---------- tokens (the only place raw values live) ---------- */
+:root {
+  --bg: #171614;
+  --ink: #F5F1E9;
+  --ink-soft: rgba(245, 241, 233, 0.78);
+  --ink-faint: rgba(245, 241, 233, 0.56);
+  --ink-ghost: rgba(245, 241, 233, 0.34);
+  --line: rgba(245, 241, 233, 0.22);
+  --panel: rgba(255, 253, 249, 0.045);
+  --glow-core: rgba(245, 241, 233, 0.16);
+  --dot: rgba(245, 241, 233, 0.09);
+  --dot-hot: rgba(245, 241, 233, 0.9);
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --gutter: clamp(24px, 6vw, 88px);
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow-x: clip; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection { background: var(--ink); color: var(--bg); }
+:focus-visible { outline: 1px solid var(--ink); outline-offset: 5px; }
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+.wrap { max-width: 1240px; margin-inline: auto; padding-inline: var(--gutter); }
+
+/* ---------- ambient layers ---------- */
+#field {
+  position: fixed; inset: 0; z-index: 0;
+  width: 100%; height: 100%; pointer-events: none;
+}
+/* ---------- loader ---------- */
+#loader {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 1;
+  transition: opacity 0.7s var(--ease), visibility 0.7s var(--ease);
+}
+#loader.is-done {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.loader-k {
+  font-family: var(--serif);
+  font-size: clamp(68px, 10vw, 116px);
+  line-height: 1;
+  color: var(--ink);
+  user-select: none;
+  display: inline-block;
+  animation: loaderBreathe 1.8s var(--ease) infinite alternate;
+  will-change: transform, opacity;
+}
+.loader-k em {
+  font-style: normal;
+  color: var(--ink-faint);
+}
+@keyframes loaderBreathe {
+  0% { opacity: 0.38; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+html.rm #loader, html.no-js #loader { display: none !important; }
+
+#glow {
+  position: fixed; top: 0; left: 0; z-index: 3; pointer-events: none; opacity: 0;
+  width: 760px; height: 760px; margin-top: -380px; margin-left: -380px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, var(--glow-core) 0%, transparent 66%);
+  transition: opacity 0.4s var(--ease);
+  will-change: transform;
+}
+html.no-pointer-glow #glow, html.rm #glow, html.rm #cursor { display: none; }
+
+#cursor {
+  position: fixed; top: 0; left: 0; z-index: 60; pointer-events: none;
+  opacity: 0; transition: opacity 0.4s var(--ease);
+}
+html.fine-pointer, html.fine-pointer body, html.fine-pointer a, html.fine-pointer button, html.fine-pointer [role="button"] {
+  cursor: none;
+}
+html.fine-pointer #cursor.is-on { opacity: 1; }
+.c-dot, .c-ring {
+  position: absolute; top: 0; left: 0; border-radius: 50%;
+  will-change: transform;
+}
+.c-dot {
+  width: 6px; height: 6px; margin-top: -3px; margin-left: -3px;
+  background: var(--ink);
+}
+.c-ring {
+  width: 38px; height: 38px; margin-top: -19px; margin-left: -19px;
+  border: 1px solid rgba(245, 241, 233, 0.5);
+  transition: border-color 0.25s var(--ease);
+}
+#cursor.is-hot .c-ring { border-color: var(--ink); }
+.c-tr { display: none; }
+html:not(.fine-pointer) #cursor { display: none; }
+
+/* ---------- brand ---------- */
+.brand { position: absolute; top: 0; left: 0; right: 0; z-index: 40; }
+.brand-in {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-block: clamp(20px, 3.4vh, 34px);
+}
+.brand-link {
+  display: inline-flex; align-items: center; gap: 12px;
+  will-change: transform;
+}
+.brand-k { font-size: 30px; line-height: 1; display: inline-block; transform: translateY(-3px); }
+.brand-word { font-family: var(--mono); font-size: 14px; letter-spacing: 0.02em; }
+.brand-side { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+
+/* ---------- hero ---------- */
+.hero {
+  position: relative; z-index: 1;
+  min-height: 100svh;
+  display: flex; align-items: center;
+  padding-top: clamp(60px, 10vh, 120px);
+}
+.hero-in { width: 100%; }
+.hero-copy { max-width: 1100px; }
+h1 {
+  font-size: clamp(52px, 8.2vw, 124px);
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+h1 em, em { font-style: italic; }
+.h-line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.h-line > span { display: block; will-change: transform; }
+.hero-sub {
+  margin-top: clamp(20px, 3.6vh, 34px);
+  max-width: 56ch;
+  font-size: clamp(17px, 1.6vw, 21px);
+  line-height: 1.62;
+  color: var(--ink-soft);
+}
+.badge {
+  margin-top: clamp(26px, 4.6vh, 44px);
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 18px;
+  border: 1px solid var(--line); border-radius: 999px;
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-soft);
+  will-change: transform;
+}
+.badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ink);
+  animation: pulse 2.6s var(--ease) infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* ---------- scene labels ---------- */
+.scene-label {
+  display: block;
+  font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+}
+
+/* ---------- manifesto ---------- */
+.manifesto { position: relative; z-index: 1; padding-block: clamp(50px, 8vh, 90px) 0; }
+.manifesto-in {
+  min-height: 100svh;
+  display: flex; flex-direction: column; align-items: flex-start;
+  justify-content: center;
+  gap: clamp(30px, 5.4vh, 62px);
+  padding-block: clamp(30px, 5vh, 60px);
+}
+.m-line {
+  font-size: clamp(26px, min(4.6vw, 7vh), 62px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  max-width: 17ch;
+}
+.m-line.right { align-self: flex-end; text-align: right; }
+.m-line.center { align-self: center; text-align: center; max-width: 19ch; }
+.m-line .inv { background: var(--ink); color: var(--bg); padding: 0 0.14em; }
+.wm { display: inline-block; overflow: hidden; vertical-align: bottom; }
+.wm .w { display: inline-block; will-change: transform; }
+
+/* ---------- principles ---------- */
+.principles { position: relative; z-index: 1; padding-block: clamp(70px, 12vh, 150px); }
+.principles .scene-label { margin-bottom: clamp(30px, 5vh, 56px); }
+.rules { display: grid; gap: clamp(28px, 5vh, 52px); }
+.rule {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 16px; row-gap: 10px; align-items: baseline;
+  border-top: 1px solid var(--line);
+  padding-top: clamp(22px, 3.6vh, 34px);
+}
+.rule-title { font-size: clamp(26px, 3.4vw, 46px); letter-spacing: -0.01em; overflow-wrap: break-word; min-width: 0; }
+.rule-num { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+.rule-gloss {
+  grid-column: 1; max-width: 52ch;
+  font-family: var(--mono); font-size: 13px; line-height: 1.7;
+  color: var(--ink-soft);
+}
+.rule:nth-child(2) { width: min(620px, 100%); justify-self: end; }
+.rule:nth-child(3) { width: min(760px, 100%); justify-self: start; }
+
+/* ---------- hands ---------- */
+.hands { position: relative; z-index: 1; margin-block: clamp(60px, 10vh, 130px) 0; padding-block: 0 0; }
+.hands .wrap { max-width: none; padding-inline: clamp(14px, 2.6vw, 56px); }
+.hands-in { display: flex; flex-direction: column; align-items: center; gap: clamp(26px, 4vh, 44px); }
+.hands-head { text-align: center; max-width: 660px; }
+.hands-head .scene-label { margin-bottom: 14px; }
+.hands-title {
+  font-size: clamp(28px, 4.2vw, 56px);
+  letter-spacing: -0.01em; line-height: 1.08;
+  overflow-wrap: break-word; min-width: 0;
+}
+.h-frame {
+  position: relative;
+  padding: clamp(16px, 2.6vw, 38px);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  max-width: fit-content;
+}
+.h-frame .tick { position: absolute; width: 9px; height: 9px; border: 1px solid var(--ink-soft); }
+.h-frame .tick.tl { top: -5px; left: -5px; border-right: 0; border-bottom: 0; }
+.h-frame .tick.tr { top: -5px; right: -5px; border-left: 0; border-bottom: 0; }
+.h-frame .tick.bl { bottom: -5px; left: -5px; border-right: 0; border-top: 0; }
+.h-frame .tick.br { bottom: -5px; right: -5px; border-left: 0; border-top: 0; }
+#hands { display: none; width: 96vw; max-width: 1600px; height: auto; }
+html.js #hands { display: block; }
+.hands-pre {
+  display: block;
+  font-family: var(--mono); font-size: 6.2px; line-height: 1.04;
+  color: var(--ink-soft); overflow: hidden;
+}
+html.js .hands-pre { display: none; }
+.hands-cap {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 24px;
+  width: min(96vw, 1600px);
+  font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+}
+
+/* ---------- close ---------- */
+.close {
+  position: relative; z-index: 1;
+  min-height: 94svh;
+  display: flex; flex-direction: column;
+  justify-content: flex-end;
+  padding-block: clamp(60px, 10vh, 120px) clamp(28px, 5vh, 48px);
+}
+.close-mid { text-align: center; margin-block: auto; }
+.close-title {
+  font-size: clamp(44px, 7.4vw, 112px);
+  letter-spacing: -0.015em; line-height: 1;
+  overflow-wrap: break-word; min-width: 0;
+}
+.close-sub { margin-top: 20px; font-family: var(--mono); font-size: 13px; color: var(--ink-faint); }
+.close-rule { width: min(460px, 70vw); height: 1px; margin: clamp(28px, 6vh, 60px) auto 0; background: var(--line); }
+.foot {
+  width: 100%;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 20px;
+  font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+}
+.foot .k { font-family: var(--serif); font-size: 20px; color: var(--ink); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 760px) {
+  .m-line.right { align-self: flex-start; text-align: left; }
+  .rule:nth-child(2), .rule:nth-child(3) { width: 100%; justify-self: stretch; }
+  .hands-cap { flex-direction: column; gap: 4px; align-items: center; text-align: center; }
+  .foot { flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+  .brand-side { display: none; }
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .badge-dot { animation: none; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<noscript><style>#loader { display: none !important; }</style></noscript>
+<div id="loader" aria-hidden="true"><span class="loader-k">k<em>.</em></span></div>
+
+<canvas id="field" aria-hidden="true"></canvas>
+<div id="glow" aria-hidden="true"></div>
+<div id="cursor" aria-hidden="true"><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-dot"></span><span class="c-ring"></span></div>
+
+<header class="brand wrap">
+  <div class="brand-in">
+    <a class="brand-link" href="#top" data-mag aria-label="Kori, back to top">
+      <span class="brand-k" aria-hidden="true">k</span>
+      <span class="brand-word">kori</span>
+    </a>
+    <span class="brand-side">the ai era needs meaning</span>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero" aria-label="Kori is coming soon">
+    <div class="wrap hero-in">
+      <div class="hero-copy">
+        <h1>
+          <span class="h-line"><span>We do</span></span>
+          <span class="h-line"><span><em>what matters.</em></span></span>
+        </h1>
+        <p class="hero-sub">
+          Kori is a Bangla word. It literally means <em>doing</em>,
+          doing to make an impact, not just sitting there.
+          We are building useful, honest technology for the AI era.
+          Not another copy. Not slop.
+        </p>
+        <div class="badge" data-mag>
+          <span class="badge-dot" aria-hidden="true"></span>
+          <span>Impacting soon</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hands" aria-label="Two hands reaching toward each other, right after the hero">
+    <div class="wrap hands-in">
+      <div class="hands-head">
+        <span class="scene-label">the promise</span>
+        <h2 class="hands-title">Connection is the oldest promise.</h2>
+      </div>
+      <figure class="h-frame">
+        <span class="tick tl" aria-hidden="true"></span>
+        <span class="tick tr" aria-hidden="true"></span>
+        <span class="tick bl" aria-hidden="true"></span>
+        <span class="tick br" aria-hidden="true"></span>
+        <pre class="hands-pre" aria-hidden="true">%%%%###**++========;;;;=*
+%%%%%%###**+++======;;;=|
+%%%%%%%%%%##***++++===;;;\\
+%%%%%%%@@@@@%%###***++=;;;=\--
+#####%%@@@@@@@@%%%%##*+=;;;;;=-\-
+******#%%@@@@@@@@@@%%##*+=;;:::;;-----
+=====+**##%%@@@@@@@@@%%#**+=;::::::;==\\\
+:::;;;==+**#%%%%@@@@@@@%%#**+=;:::::::;==\
+:..:::;;==+****##%%@@@@@%%##*+===;;:::::;;\----\
+.....:::;;===---\\###%%%###**++++++==;;;;;:;;;=+\\
+:......::::::::-\\---------++++**#**++++==;;;;;;+|
+;:...............-----------;==+*********+===;::;|
+=;:..........................\----==++++***++=;::;\\                                                                                         /%
++=;.............................--------=+****+=;:;=|                                                                               - -------%%
++=;:.....:;:\..........................-\\\*##*+=;;;|                                                                         ------@-%%%%%%%%%
+++=;::..:;==||..........................\\\\**#**=;;;\\                                                                  /---/@@@@@@%%%%%@@@@@@
++++==;:::;=+=||..........................\\\\+***+=;;;\|                             ------------                   -----@@@@@@@@@@%%%%%@@@@@@@
+****++=;;;;;;||...........................\\||++**+=;:;|\                      ------%#######%%%%\------------------%@@@@@@@@@%%%%%%%%%@@@@@@@@
+*#####*+=;:::..............................|||=+++*+=;:||\              /------##%%##*++++*#######***++*#%@@@@@@%%%%##%%%%%%%%######%%%@@@@@@@@
+####%%##*=;::..........|;;\\...............|||+++++++;::|||      /------%%##*+++****++=;;=+*####***++==+|%@@@@@@@%##*****###***++**#%%@@@@@@@@%
+#####%###*=;:.........|||--\\\.............|||--*++++=;::|||    /#***#####*+========;;::::;=+++++++==;;||%@@@@@@@%#*+====+++====+*#%%@@@@@@@@%%
+ \\%####**+=;;:.......||/ -\\\\|...........|||  |*+++=;::;||   |%#++++++++==;:::::::::...::;====;;;;:::|||%%%#%%@%#*=;;;;;;;;==+*#%%@@@@%%%@@@@
+   \-\#***++==;;:.....||     \\||...........||  |%*+++=;::|||   \\*++=====;:::::::;;:::::;;--=;;;:::...||\###**#%%#*=;:::::;=+*#%%@@@%%%%%%@@@@
+      \\*+++++==;::....||      \|...........||   \\#*+==;;;|||    \-----===;;--------------  ----;;:::::;=++++=+*##*=;::::////%@@@@%%##*##%@@@@
+        \*++++=;;:::...||       ||..........||     \-------/||          -----                    -------=====;;;==++=;;::///%@@@@@%%#*+++*%@@@@
+         \*+==;;::;;;:::|       |||.........|||            --/                                          \+=;::::::;;;;;=///@@@@@%%#*+===+*#%@@@
+          ||;;::::;=====;\|     |\||........||||             -                                           \\;:....::;==+//%@@@@%%#*+=;;:;=+*####
+          ||::...:;=+*++==|       ||.........||                                                            |;:..:;///*#%@@@%%#*++=;;::::;=+****
+          ||:....:;=+***++|       ||.........||                                                           |+=;:;////%%@@@@%///=;;::....:;;=====
+          ||::::/;==+*****|      |||.........|||                                                        --*++===+#%%@@@%%////;::.......::;;;;;;
+          ||;;-/---*-----/        ||\../---..||||                                                   ----##****++*#%%%##--//;::..........:::::::
+          |\--///  -              |\\--/-----/|||                                                -/-%%%##**##**+**##*//=;;::::::...............
+           ----                   |\----------/||                                             //-%%%%%###**##*++++++=;;:::::;;;;\\.............
+                                      -      --/                                            ||@%##%%%%###*##*++=;;;;;:::::;=++**\\\\...........
+                                                                                             |%###########**+==;::::::::::;=*#%##\\\:..::......
+                                                                                              |#***********+=;:::::;;;;::::=+*#%#*+=;:::;:::...
+                                                                                              |%*++====++==;:::::;==+=;:...:;=+**+++=;;;;;;::::
+                                                                                               |\*+=;;;;;::...::;=+++=;:...::;=======;;::::::::
+                                                                                                 |*+=;;;:.....:;==+==;:..::;;;;;;:::::::::.::::
+                                                                                                 |#++=;::....:;==;;;:::://-+++==;.....:::::::::
+                                                                                                 |#*++=;:...||==;::..:///-#***+=;....|:;;-----;
+                                                                                                 |#*+=;:....|;==;:...|//%%#*++=;:...|/---
+                                                                                                 |*+=;:....||===;:..||/@@%#|=;;:...//|  -
+                                                                                               -|#*=;:.....|;==;:..||||\@||||:....|///
+                                                                                               |@||=;:....||;;;:::/|||- ||||:....||
+                                                                                               \|||=;||...|;;;:..:|||   |||;::...|
+                                                                                                 ||+=||...|;;:...||||   ||+=;;:...|
+                                                                                                 ||*+||...|;;:..||//    ||+++==:::|
+                                                                                                 ||*+||...|;;:..||      ||****+=;;|
+                                                                                                 ||*+||...|;;:.:||||     |%####+=+|
+                                                                                                 |||=||...|;;:.||||@     @%%%%#*+*</pre>
+        <canvas id="hands" role="img" aria-label="ASCII rendition of two hands from Michelangelo's Creation of Adam, reaching slowly toward each other, almost touching"></canvas>
+      </figure>
+      <figcaption class="hands-cap">
+        <span>connecting people, soon</span>
+        <span>after Michelangelo, Cappella Sistina</span>
+      </figcaption>
+    </div>
+  </section>
+
+  <section class="manifesto" aria-label="The problem with tech today">
+    <div class="wrap manifesto-in">
+      <p class="m-line">Most of what ships today is noise.</p>
+      <p class="m-line right">Products that copy products. Apps that exist to exist.</p>
+      <p class="m-line">This era deserves better than <span class="inv">slop.</span></p>
+      <p class="m-line center">We build deliberately, for something worth doing.</p>
+    </div>
+  </section>
+
+  <section class="principles wrap" aria-label="Principles">
+    <span class="scene-label">the rules</span>
+    <div class="rules">
+      <article class="rule">
+        <h3 class="rule-title">Utility over novelty.</h3>
+        <span class="rule-num">i</span>
+        <p class="rule-gloss">If it does not help someone real, it should not exist.</p>
+      </article>
+      <article class="rule">
+        <h3 class="rule-title">Impact over attention.</h3>
+        <span class="rule-num">ii</span>
+        <p class="rule-gloss">We count what changes for people, not what trends for a week.</p>
+      </article>
+      <article class="rule">
+        <h3 class="rule-title">Doing over talking.</h3>
+        <span class="rule-num">iii</span>
+        <p class="rule-gloss">Kori is a verb. So is everything we build.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="close" aria-label="Closing">
+    <div class="close-mid wrap">
+      <h2 class="close-title">Impacting soon.</h2>
+      <p class="close-sub">building quietly, until it counts</p>
+      <div class="close-rule"></div>
+    </div>
+    <div class="wrap foot">
+      <span class="k">k</span>
+      <span>&copy; 2026 Kori</span>
+    </div>
+  </section>
+
+</main>
+
+<script>/* ASCII hands sampled from Michelangelo, Creation of Adam (public domain, Wikimedia Commons) */
+const KORI_HANDS = {
+  rows: 51, cols: 143, splitCol: 63,
+  static: [
+    "%%%%###**++========;;;;=*",
+    "%%%%%%###**+++======;;;=|",
+    "%%%%%%%%%%##***++++===;;;\\\\",
+    "%%%%%%%@@@@@%%###***++=;;;=\\--",
+    "#####%%@@@@@@@@%%%%##*+=;;;;;=-\\-",
+    "******#%%@@@@@@@@@@%%##*+=;;:::;;-----",
+    "=====+**##%%@@@@@@@@@%%#**+=;::::::;==\\\\\\",
+    ":::;;;==+**#%%%%@@@@@@@%%#**+=;:::::::;==\\",
+    ":..:::;;==+****##%%@@@@@%%##*+===;;:::::;;\\----\\",
+    ".....:::;;===---\\\\###%%%###**++++++==;;;;;:;;;=+\\\\",
+    ":......::::::::-\\\\---------++++**#**++++==;;;;;;+|",
+    ";:...............-----------;==+*********+===;::;|",
+    "=;:..........................\\----==++++***++=;::;\\\\                                                                                         /%",
+    "+=;.............................--------=+****+=;:;=|                                                                               - -------%%",
+    "+=;:.....:;:\\..........................-\\\\\\*##*+=;;;|                                                                         ------@-%%%%%%%%%",
+    "++=;::..:;==||..........................\\\\\\\\**#**=;;;\\\\                                                                  /---/@@@@@@%%%%%@@@@@@",
+    "+++==;:::;=+=||..........................\\\\\\\\+***+=;;;\\|                             ------------                   -----@@@@@@@@@@%%%%%@@@@@@@",
+    "****++=;;;;;;||...........................\\\\||++**+=;:;|\\                      ------%#######%%%%\\------------------%@@@@@@@@@%%%%%%%%%@@@@@@@@",
+    "*#####*+=;:::..............................|||=+++*+=;:||\\              /------##%%##*++++*#######***++*#%@@@@@@%%%%##%%%%%%%%######%%%@@@@@@@@",
+    "####%%##*=;::..........|;;\\\\...............|||+++++++;::|||      /------%%##*+++****++=;;=+*####***++==+|%@@@@@@@%##*****###***++**#%%@@@@@@@@%",
+    "#####%###*=;:.........|||--\\\\\\.............|||--*++++=;::|||    /#***#####*+========;;::::;=+++++++==;;||%@@@@@@@%#*+====+++====+*#%%@@@@@@@@%%",
+    " \\\\%####**+=;;:.......||/ -\\\\\\\\|...........|||  |*+++=;::;||   |%#++++++++==;:::::::::...::;====;;;;:::|||%%%#%%@%#*=;;;;;;;;==+*#%%@@@@%%%@@@@",
+    "   \\-\\#***++==;;:.....||     \\\\||...........||  |%*+++=;::|||   \\\\*++=====;:::::::;;:::::;;--=;;;:::...||\\###**#%%#*=;:::::;=+*#%%@@@%%%%%%@@@@",
+    "      \\\\*+++++==;::....||      \\|...........||   \\\\#*+==;;;|||    \\-----===;;--------------  ----;;:::::;=++++=+*##*=;::::////%@@@@%%##*##%@@@@",
+    "        \\*++++=;;:::...||       ||..........||     \\-------/||          -----                    -------=====;;;==++=;;::///%@@@@@%%#*+++*%@@@@",
+    "         \\*+==;;::;;;:::|       |||.........|||            --/                                          \\+=;::::::;;;;;=///@@@@@%%#*+===+*#%@@@",
+    "          ||;;::::;=====;\\|     |\\||........||||             -                                           \\\\;:....::;==+//%@@@@%%#*+=;;:;=+*####",
+    "          ||::...:;=+*++==|       ||.........||                                                            |;:..:;///*#%@@@%%#*++=;;::::;=+****",
+    "          ||:....:;=+***++|       ||.........||                                                           |+=;:;////%%@@@@%///=;;::....:;;=====",
+    "          ||::::/;==+*****|      |||.........|||                                                        --*++===+#%%@@@%%////;::.......::;;;;;;",
+    "          ||;;-/---*-----/        ||\\../---..||||                                                   ----##****++*#%%%##--//;::..........:::::::",
+    "          |\\--///  -              |\\\\--/-----/|||                                                -/-%%%##**##**+**##*//=;;::::::...............",
+    "           ----                   |\\----------/||                                             //-%%%%%###**##*++++++=;;:::::;;;;\\\\.............",
+    "                                      -      --/                                            ||@%##%%%%###*##*++=;;;;;:::::;=++**\\\\\\\\...........",
+    "                                                                                             |%###########**+==;::::::::::;=*#%##\\\\\\:..::......",
+    "                                                                                              |#***********+=;:::::;;;;::::=+*#%#*+=;:::;:::...",
+    "                                                                                              |%*++====++==;:::::;==+=;:...:;=+**+++=;;;;;;::::",
+    "                                                                                               |\\*+=;;;;;::...::;=+++=;:...::;=======;;::::::::",
+    "                                                                                                 |*+=;;;:.....:;==+==;:..::;;;;;;:::::::::.::::",
+    "                                                                                                 |#++=;::....:;==;;;:::://-+++==;.....:::::::::",
+    "                                                                                                 |#*++=;:...||==;::..:///-#***+=;....|:;;-----;",
+    "                                                                                                 |#*+=;:....|;==;:...|//%%#*++=;:...|/---",
+    "                                                                                                 |*+=;:....||===;:..||/@@%#|=;;:...//|  -",
+    "                                                                                               -|#*=;:.....|;==;:..||||\\@||||:....|///",
+    "                                                                                               |@||=;:....||;;;:::/|||- ||||:....||",
+    "                                                                                               \\|||=;||...|;;;:..:|||   |||;::...|",
+    "                                                                                                 ||+=||...|;;:...||||   ||+=;;:...|",
+    "                                                                                                 ||*+||...|;;:..||//    ||+++==:::|",
+    "                                                                                                 ||*+||...|;;:..||      ||****+=;;|",
+    "                                                                                                 ||*+||...|;;:.:||||     |%####+=+|",
+    "                                                                                                 |||=||...|;;:.||||@     @%%%%#*+*"
+  ],
+  left: [
+    "%%%%###**++========;;;;=*",
+    "%%%%%%###**+++======;;;=|",
+    "%%%%%%%%%%##***++++===;;;\\\\",
+    "%%%%%%%@@@@@%%###***++=;;;=\\--",
+    "#####%%@@@@@@@@%%%%##*+=;;;;;=-\\-",
+    "******#%%@@@@@@@@@@%%##*+=;;:::;;-----",
+    "=====+**##%%@@@@@@@@@%%#**+=;::::::;==\\\\\\",
+    ":::;;;==+**#%%%%@@@@@@@%%#**+=;:::::::;==\\",
+    ":..:::;;==+****##%%@@@@@%%##*+===;;:::::;;\\----\\",
+    ".....:::;;===---\\\\###%%%###**++++++==;;;;;:;;;=+\\\\",
+    ":......::::::::-\\\\---------++++**#**++++==;;;;;;+|",
+    ";:...............-----------;==+*********+===;::;|",
+    "=;:..........................\\----==++++***++=;::;\\\\           ",
+    "+=;.............................--------=+****+=;:;=|          ",
+    "+=;:.....:;:\\..........................-\\\\\\*##*+=;;;|          ",
+    "++=;::..:;==||..........................\\\\\\\\**#**=;;;\\\\        ",
+    "+++==;:::;=+=||..........................\\\\\\\\+***+=;;;\\|       ",
+    "****++=;;;;;;||...........................\\\\||++**+=;:;|\\      ",
+    "*#####*+=;:::..............................|||=+++*+=;:||\\     ",
+    "####%%##*=;::..........|;;\\\\...............|||+++++++;::|||    ",
+    "#####%###*=;:.........|||--\\\\\\.............|||--*++++=;::|||   ",
+    " \\\\%####**+=;;:.......||/ -\\\\\\\\|...........|||  |*+++=;::;||   ",
+    "   \\-\\#***++==;;:.....||     \\\\||...........||  |%*+++=;::|||  ",
+    "      \\\\*+++++==;::....||      \\|...........||   \\\\#*+==;;;||| ",
+    "        \\*++++=;;:::...||       ||..........||     \\-------/|| ",
+    "         \\*+==;;::;;;:::|       |||.........|||            --/ ",
+    "          ||;;::::;=====;\\|     |\\||........||||             - ",
+    "          ||::...:;=+*++==|       ||.........||                ",
+    "          ||:....:;=+***++|       ||.........||                ",
+    "          ||::::/;==+*****|      |||.........|||               ",
+    "          ||;;-/---*-----/        ||\\../---..||||              ",
+    "          |\\--///  -              |\\\\--/-----/|||              ",
+    "           ----                   |\\----------/||              ",
+    "                                      -      --/               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               ",
+    "                                                               "
+  ],
+  right: [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "                                                                              /%",
+    "                                                                     - -------%%",
+    "                                                               ------@-%%%%%%%%%",
+    "                                                          /---/@@@@@@%%%%%@@@@@@",
+    "                      ------------                   -----@@@@@@@@@@%%%%%@@@@@@@",
+    "                ------%#######%%%%\\------------------%@@@@@@@@@%%%%%%%%%@@@@@@@@",
+    "         /------##%%##*++++*#######***++*#%@@@@@@%%%%##%%%%%%%%######%%%@@@@@@@@",
+    "  /------%%##*+++****++=;;=+*####***++==+|%@@@@@@@%##*****###***++**#%%@@@@@@@@%",
+    " /#***#####*+========;;::::;=+++++++==;;||%@@@@@@@%#*+====+++====+*#%%@@@@@@@@%%",
+    "|%#++++++++==;:::::::::...::;====;;;;:::|||%%%#%%@%#*=;;;;;;;;==+*#%%@@@@%%%@@@@",
+    " \\\\*++=====;:::::::;;:::::;;--=;;;:::...||\\###**#%%#*=;:::::;=+*#%%@@@%%%%%%@@@@",
+    "   \\-----===;;--------------  ----;;:::::;=++++=+*##*=;::::////%@@@@%%##*##%@@@@",
+    "         -----                    -------=====;;;==++=;;::///%@@@@@%%#*+++*%@@@@",
+    "                                         \\+=;::::::;;;;;=///@@@@@%%#*+===+*#%@@@",
+    "                                          \\\\;:....::;==+//%@@@@%%#*+=;;:;=+*####",
+    "                                            |;:..:;///*#%@@@%%#*++=;;::::;=+****",
+    "                                           |+=;:;////%%@@@@%///=;;::....:;;=====",
+    "                                         --*++===+#%%@@@%%////;::.......::;;;;;;",
+    "                                     ----##****++*#%%%##--//;::..........:::::::",
+    "                                  -/-%%%##**##**+**##*//=;;::::::...............",
+    "                               //-%%%%%###**##*++++++=;;:::::;;;;\\\\.............",
+    "                             ||@%##%%%%###*##*++=;;;;;:::::;=++**\\\\\\\\...........",
+    "                              |%###########**+==;::::::::::;=*#%##\\\\\\:..::......",
+    "                               |#***********+=;:::::;;;;::::=+*#%#*+=;:::;:::...",
+    "                               |%*++====++==;:::::;==+=;:...:;=+**+++=;;;;;;::::",
+    "                                |\\*+=;;;;;::...::;=+++=;:...::;=======;;::::::::",
+    "                                  |*+=;;;:.....:;==+==;:..::;;;;;;:::::::::.::::",
+    "                                  |#++=;::....:;==;;;:::://-+++==;.....:::::::::",
+    "                                  |#*++=;:...||==;::..:///-#***+=;....|:;;-----;",
+    "                                  |#*+=;:....|;==;:...|//%%#*++=;:...|/---",
+    "                                  |*+=;:....||===;:..||/@@%#|=;;:...//|  -",
+    "                                -|#*=;:.....|;==;:..||||\\@||||:....|///",
+    "                                |@||=;:....||;;;:::/|||- ||||:....||",
+    "                                \\|||=;||...|;;;:..:|||   |||;::...|",
+    "                                  ||+=||...|;;:...||||   ||+=;;:...|",
+    "                                  ||*+||...|;;:..||//    ||+++==:::|",
+    "                                  ||*+||...|;;:..||      ||****+=;;|",
+    "                                  ||*+||...|;;:.:||||     |%####+=+|",
+    "                                  |||=||...|;;:.||||@     @%%%%#*+*"
+  ]
+};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js" defer></script>
+
+<script defer>
+(function () {
+  "use strict";
+  var html = document.documentElement;
+  html.classList.add("js");
+  var body = document.body;
+
+  var REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var FINE = window.matchMedia("(pointer: fine)").matches;
+  if (REDUCED) html.classList.add("rm");
+  if (FINE) html.classList.add("fine-pointer"); else html.classList.add("no-pointer-glow");
+  if (typeof KORI_HANDS === "undefined") html.classList.add("no-js");
+
+  var started = false;
+  var gsapOK = false;
+
+  function maybeRegisterGsap() {
+    try {
+      if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined" && !REDUCED) {
+        gsap.registerPlugin(ScrollTrigger);
+        gsapOK = true;
+      }
+    } catch (e) { gsapOK = false; }
+  }
+
+  /* ================================================================
+     Boot: paint at once, no hidden content. If GSAP is present and
+     motion is allowed, layer the scroll story on top.
+     ================================================================ */
+  function dismissLoader(cb) {
+    var loader = document.getElementById("loader");
+    if (!loader || REDUCED) {
+      if (loader) loader.style.display = "none";
+      if (cb) cb();
+      return;
+    }
+    loader.classList.add("is-done");
+    setTimeout(function () {
+      loader.style.display = "none";
+    }, 700);
+    if (cb) cb();
+  }
+
+  function boot() {
+    if (started) return;
+    started = true;
+    maybeRegisterGsap();
+    initCursor();
+    initHands();
+    dismissLoader(function () {
+      if (gsapOK) {
+        heroReveal();
+        manifestoStory();
+        revealPrinciples();
+        revealHands();
+        closeStory();
+      }
+    });
+  }
+
+  if (REDUCED) {
+    boot();
+  } else {
+    var tries = 0;
+    var minHoldPassed = false;
+    setTimeout(function () { minHoldPassed = true; }, 700);
+
+    (function waitGsap() {
+      tries++;
+      if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined" && minHoldPassed) {
+        boot();
+        return;
+      }
+      if (tries > 600) { boot(); return; }         /* CDN stalled: ship static */
+      requestAnimationFrame(waitGsap);
+    })();
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      setTimeout(function () { if (!started) boot(); }, 900);
+    });
+  }
+
+  /* ================================================================
+     Ambient dot field behind everything. Repelled by the pointer.
+     ================================================================ */
+  var field = document.getElementById("field", null);
+  var fctx = null, dots = null, STEP = 30;
+  var moss = { mx: -1e5, my: -1e5 };
+  var fieldDirty = true;
+
+  function buildField() {
+    if (!field || REDUCED) return;
+    fctx = field.getContext("2d");
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var w = window.innerWidth, h = window.innerHeight;
+    field.width = Math.round(w * dpr);
+    field.height = Math.round(h * dpr);
+    fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dots = [];
+    for (var y = STEP * 0.65; y < h; y += STEP)
+      for (var x = STEP * 0.65; x < w; x += STEP)
+        dots.push({ x: x, y: y, ox: 0, oy: 0, vx: 0, vy: 0 });
+    fieldDirty = true;
+  }
+  buildField();
+  window.addEventListener("resize", buildField, { passive: true });
+
+  function fieldTick() {
+    requestAnimationFrame(fieldTick);
+    if (!fctx) return;
+    var dirty = fieldDirty;
+    fieldDirty = false;
+    for (var i = 0; i < dots.length; i++) {
+      var d = dots[i];
+      var dx = d.x - moss.mx, dy = d.y - moss.my;
+      var dist2 = dx * dx + dy * dy, R = 190;
+      if (dist2 < R * R && moss.mx > -9000) {
+        var dist = Math.sqrt(dist2) || 1;
+        var t = (R - dist) / R;
+        t = t * t * (3 - 2 * t);
+        d.vx += (dx / dist) * t * 5.8;
+        d.vy += (dy / dist) * t * 5.2;
+      }
+      d.vx += -d.ox * 0.055;
+      d.vy += -d.oy * 0.055;
+      d.vx *= 0.86; d.vy *= 0.86;
+      d.ox += d.vx; d.oy += d.vy;
+      if (Math.abs(d.ox) > 0.25 || Math.abs(d.oy) > 0.25) dirty = true;
+    }
+    if (!dirty) return;
+    var w = window.innerWidth, h = window.innerHeight;
+    fctx.clearRect(0, 0, w, h);
+    fctx.fillStyle = "rgba(245,241,233,0.09)";
+    for (i = 0; i < dots.length; i++) {
+      var q = dots[i];
+      var disp = Math.min(1, (Math.abs(q.ox) + Math.abs(q.oy)) / 12);
+      var s = 1 + disp * 1.1;
+      fctx.globalAlpha = 1;
+      fctx.fillRect(q.x + q.ox - s / 2, q.y + q.oy - s / 2, s, s);
+    }
+    fctx.globalAlpha = 1;
+  }
+  requestAnimationFrame(fieldTick);
+
+  /* ================================================================
+     Cursor: soft ambient glow and dot+ring centered directly under
+     the pointer. Magnetic type leans toward the pointer.
+     ================================================================ */
+  function initCursor() {
+    if (!FINE || REDUCED) return;
+    var glow = document.getElementById("glow");
+    var cursor = document.getElementById("cursor");
+    var dot = cursor.querySelector(".c-dot");
+    var ring = cursor.querySelector(".c-ring");
+
+    var px = window.innerWidth / 2, py = window.innerHeight / 2;
+    var rx = px, ry = py;
+    var scale = 1, scaleT = 1, seen = false;
+
+    window.addEventListener("pointermove", function (e) {
+      moss.mx = e.clientX; moss.my = e.clientY;
+      px = e.clientX; py = e.clientY;
+      if (!seen) {
+        seen = true;
+        cursor.classList.add("is-on");
+        glow.style.opacity = "1";
+        rx = px; ry = py;
+      }
+      /* Dot and ambient light track instantaneously under the cursor (0 lag) */
+      dot.style.transform = "translate(" + px + "px," + py + "px)";
+      glow.style.transform = "translate(" + px + "px," + py + "px)";
+      fieldDirty = true;
+    }, { passive: true });
+
+    document.addEventListener("pointerleave", function () {
+      cursor.classList.remove("is-on");
+      glow.style.opacity = "0";
+    });
+    document.addEventListener("pointerenter", function () {
+      if (seen) {
+        cursor.classList.add("is-on");
+        glow.style.opacity = "1";
+      }
+    });
+
+    document.addEventListener("pointerover", function (e) {
+      if (e.target.closest("a, .badge, [data-mag]")) { cursor.classList.add("is-hot"); scaleT = 1.6; }
+    });
+    document.addEventListener("pointerout", function (e) {
+      if (e.target.closest("a, .badge, [data-mag]")) { cursor.classList.remove("is-hot"); scaleT = 1; }
+    });
+
+    (function cursorTick() {
+      requestAnimationFrame(cursorTick);
+      /* Ring stays centered under cursor, expanding smoothly on interactive elements */
+      rx += (px - rx) * 0.7;
+      ry += (py - ry) * 0.7;
+      scale += (scaleT - scale) * 0.2;
+      ring.style.transform = "translate(" + rx.toFixed(1) + "px," + ry.toFixed(1) + "px) scale(" + scale.toFixed(3) + ")";
+    })();
+
+    initMagnetic();
+  }
+
+  function initMagnetic() {
+    var els = Array.prototype.slice.call(document.querySelectorAll("[data-mag]"));
+    if (!els.length || REDUCED) return;
+    var state = els.map(function (el) {
+      return { el: el, tx: 0, ty: 0, cx: 0, cy: 0 };
+    });
+    window.addEventListener("pointermove", function (e) {
+      state.forEach(function (s) {
+        var r = s.el.getBoundingClientRect();
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        var ax = e.clientX - cx, ay = e.clientY - cy;
+        var near = Math.abs(ax) < r.width / 2 + 48 && Math.abs(ay) < r.height / 2 + 48;
+        s.tx = near ? ax * 0.3 : 0;
+        s.ty = near ? ay * 0.3 : 0;
+      });
+    }, { passive: true });
+    (function magTick() {
+      requestAnimationFrame(magTick);
+      state.forEach(function (s) {
+        s.cx += (s.tx - s.cx) * 0.16;
+        s.cy += (s.ty - s.cy) * 0.16;
+        if (Math.abs(s.cx) > 0.04 || Math.abs(s.cy) > 0.04) {
+          s.el.style.transform = "translate(" + s.cx.toFixed(2) + "px," + s.cy.toFixed(2) + "px)";
+        } else if (s.el.style.transform) {
+          s.el.style.transform = "";
+        }
+      });
+    })();
+  }
+
+  /* ================================================================
+     The handshake. Sampled ASCII from the public-domain fresco.
+     Left half and right half fight a slow loop toward each other:
+     spread, reach, tense, spark, breathe, relax.
+     ================================================================ */
+  function initHands() {
+    if (typeof KORI_HANDS === "undefined") return;
+    var cvs = document.getElementById("hands");
+    var ctx = cvs.getContext("2d");
+    var P = KORI_HANDS;
+    var FONT = 14, ROWH = 14, CELLW = FONT * 0.6;
+    var PAD = 56;                        /* px of padding for the spread offset */
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+
+    var monoStack = getComputedStyle(document.body).getPropertyValue("--mono") || "monospace";
+    /* luminance fill: lit skin dense, shadow air; silhouette bright */
+    var charA = {
+      "|": 0.95, "-": 0.95, "/": 0.95, "\\": 0.95,
+      ".": 0.34, ":": 0.42, ";": 0.5, "=": 0.58, "+": 0.66,
+      "*": 0.74, "#": 0.82, "%": 0.9, "@": 0.96
+    };
+
+    /* pre-renderEach half once per size: per-char brightness by density */
+    var half = [null, null];
+    function buildHalf(lines, startCol) {
+      var w = Math.ceil((lines.length ? Math.max.apply(null, lines.map(function (l) { return l.length; })) : 1) * CELLW) || CELLW;
+      var oc = document.createElement("canvas");
+      oc.width = Math.max(2, Math.round(w * dpr));
+      oc.height = Math.round(P.rows * ROWH * dpr);
+      var o = oc.getContext("2d");
+      o.setTransform(dpr, 0, 0, dpr, 0, 0);
+      o.font = FONT + "px " + monoStack;
+      o.textBaseline = "top";
+      o.fillStyle = "#F5F1E9";
+      for (var r = 0; r < P.rows; r++) {
+        var s = lines[r] || "";
+        for (var c = 0; c < s.length; c++) {
+          var ch = s.charAt(c);
+          if (ch === " ") continue;
+          o.globalAlpha = charA[ch] !== undefined ? charA[ch] : 1;
+          o.fillText(ch, c * CELLW, r * ROWH);
+        }
+      }
+      o.globalAlpha = 1;
+      oc._w = w;
+      return oc;
+    }
+
+    function fit() {
+      /* render unscaled when possible: pick font size for the available width */
+      var scene = cvs.closest(".hands-in");
+      var inner = scene.clientWidth;
+      if (scene) {
+        var cs = getComputedStyle(scene);
+        inner -= parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      }
+      var avail = Math.max(300, Math.min(1600, inner - 70));
+      FONT = Math.max(9, Math.min(18, Math.floor(avail / (P.cols * 0.615))));
+      ROWH = FONT;
+      CELLW = FONT * 0.6;
+    }
+    function size() {
+      fit();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      var W = 0, H = 0, avail = 0;
+      for (;;) {
+        ctx.font = FONT + "px " + monoStack;
+        CELLW = ctx.measureText("Milan1").width / 6 || FONT * 0.6;
+        W = Math.ceil(P.cols * CELLW + PAD * 2);
+        var scene = cvs.closest(".hands-in");
+        var inner = scene.clientWidth;
+        var scs = getComputedStyle(scene);
+        inner -= parseFloat(scs.paddingLeft) + parseFloat(scs.paddingRight);
+        avail = Math.max(300, Math.min(1600, inner - 70));
+        if (W <= avail || FONT <= 9) break;
+        FONT -= 1; ROWH = FONT;
+      }
+      H = Math.ceil(P.rows * ROWH);
+      cvs.width = Math.round(W * dpr);
+      cvs.height = Math.round(H * dpr);
+      cvs.style.maxWidth = "none";
+      cvs.style.width = W + "px";
+      cvs.style.height = H + "px";
+      cvs.style.maxWidth = "min(96vw, " + W + "px)";
+      cvs.style.height = "auto";
+      cvs.style.aspectRatio = W + " / " + H;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.font = FONT + "px " + monoStack;
+      ctx.textBaseline = "top";
+      half[0] = buildHalf(P.left, 0);
+      half[1] = buildHalf(P.right, P.splitCol);
+      /* any (re)size wipes the bitmap: re-paint the frozen pose when
+         motion is reduced and no loop will repaint */
+      if (REDUCED && st) { st.extra = 0; st.sparkle = 0; draw(performance.now()); }
+    }
+    size();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(size);
+    window.addEventListener("resize", size, { passive: true });
+
+    /* tips, from ink */
+    var leftTip = 0, rightTip = P.cols - P.splitCol, ltRow = 0, rtRow = 0;
+    for (var r = 0; r < P.rows; r++) {
+      for (var c = 0; c < P.splitCol; c++) {
+        if ((P.left[r].charAt(c) || " ") !== " ") { if (c > leftTip) { leftTip = c; ltRow = r; } }
+      }
+      for (c = 0; c < P.cols - P.splitCol; c++) {
+        if ((P.right[r].charAt(c) || " ") !== " ") { if (c < rightTip) { rightTip = c; rtRow = r; } }
+      }
+    }
+    var naturalGap = (P.splitCol + rightTip) - (leftTip + 1);
+    var contactX = 0, contactY = ((ltRow + rtRow) / 2 + 0.5) * ROWH;
+    void naturalGap;
+
+    var particles = [];
+    function spark(zap) {
+      for (var i = 0; i < zap; i++) {
+        var a = Math.random() * Math.PI * 2, sp = 0.9 + Math.random() * 3.1;
+        particles.push({
+          x: contactX, y: contactY,
+          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.35,
+          life: 1, decay: 0.016 + Math.random() * 0.028,
+          s: (Math.random() < 0.34 ? 2.6 : 1.3) * (0.65 + FONT / 15)
+        });
+      }
+    }
+
+    var SPREAD = 6;
+    var st = { extra: SPREAD, target: SPREAD, sparkle: 0, flash: 0 };
+    var T = { reach: 2700, tense: 1500, spark: 480, breathe: 1200, relax: 1600, idle: 1600 };
+    var CYCLE = T.reach + T.tense + T.spark + T.breathe + T.relax + T.idle;
+    var t0 = 0, prevPhase = "";
+
+    function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+    function draw(now) {
+      var W = P.cols * CELLW + PAD * 2;
+      ctx.clearRect(0, 0, W, P.rows * ROWH);
+      var offL = -st.extra / 2;
+      var offR = st.extra / 2;
+      var x0 = PAD;
+      contactY = ((ltRow + rtRow) / 2 + 0.5) * ROWH;
+      /* one gentle breath for the whole artwork, no per-char noise */
+      var breathe = 0.9 + 0.1 * Math.sin(now * 0.0011);
+      ctx.globalAlpha = breathe;
+      if (half[0]) ctx.drawImage(half[0], Math.round(x0 + offL * CELLW), 0, half[0]._w, P.rows * ROWH);
+      if (half[1]) ctx.drawImage(half[1], Math.round(x0 + (P.splitCol + offR) * CELLW), 0, half[1]._w, P.rows * ROWH);
+      ctx.globalAlpha = 1;
+
+      contactX = x0 + ((leftTip + offL) + (P.splitCol + rightTip + offR)) / 2 * CELLW + CELLW * 0.5;
+
+      if (st.sparkle > 0.01) {
+        var g = ctx.createRadialGradient(contactX, contactY, 0, contactX, contactY, 92);
+        g.addColorStop(0, "rgba(245,241,233," + (0.3 * st.sparkle).toFixed(3) + ")");
+        g.addColorStop(1, "rgba(245,241,233,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(contactX - 96, contactY - 96, 192, 192);
+        ctx.fillStyle = "rgba(245,241,233,0.9)";
+        ctx.globalAlpha = 0.35 + 0.65 * st.sparkle;
+        ctx.fillRect(contactX - 0.5, contactY - 1.2, 1, 2.4);
+        ctx.globalAlpha = 1;
+      }
+
+      for (var i = particles.length - 1; i >= 0; i--) {
+        var p = particles[i];
+        p.x += p.vx; p.y += p.vy;
+        p.vx *= 0.94; p.vy = p.vy * 0.94 + 0.014;
+        p.life -= p.decay;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = "rgba(245,241,233,0.95)";
+        ctx.fillRect(p.x, p.y, p.s, p.s);
+      }
+      /* the spark itself: a stuttering filament across the last gap */
+      if (st.flash > 0.02) {
+        var fx0 = x0 + (leftTip + offL) * CELLW;
+        var fx1 = x0 + (P.splitCol + rightTip + offR) * CELLW;
+        if (fx1 < fx0) { var tmp = fx0; fx0 = fx1; fx1 = tmp; }
+        ctx.globalAlpha = st.flash * (0.45 + 0.55 * Math.random());
+        ctx.fillStyle = "rgba(245,241,233,0.96)";
+        ctx.fillRect(fx0, contactY - 0.6, Math.max(2, fx1 - fx0), 1.4);
+        ctx.globalAlpha = st.flash * 0.07;
+        ctx.fillRect(0, 0, W, P.rows * ROWH);
+        ctx.globalAlpha = 1;
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    var rafId = 0, running = false, lastDraw = 0;
+    function tick(now) {
+      rafId = requestAnimationFrame(tick);
+      var t = (now - t0) % CYCLE;
+      var phase, f;
+      if (t < T.reach) {
+        phase = "reach"; f = t / T.reach;
+        st.target = SPREAD * (1 - ease(f));
+        st.sparkle = ease(f) * 0.25;
+      } else if (t < T.reach + T.tense) {
+        phase = "tense"; f = (t - T.reach) / T.tense;
+        st.target = 0.25;
+        st.sparkle = 0.25 + f * 0.75;
+      } else if (t < T.reach + T.tense + T.spark) {
+        phase = "spark"; st.target = 0.1; st.sparkle = 1;
+      } else if (t < T.reach + T.tense + T.spark + T.breathe) {
+        phase = "breathe"; st.target = 0.1;
+        st.sparkle = 1 - ((t - T.reach - T.tense - T.spark) / T.breathe) * 0.5;
+      } else if (t < T.reach + T.tense + T.spark + T.breathe + T.relax) {
+        phase = "relax"; f = (t - T.reach - T.tense - T.spark - T.breathe) / T.relax;
+        st.target = SPREAD * ease(f);
+        st.sparkle = Math.max(0, 0.5 - f);
+      } else {
+        phase = "idle"; st.target = SPREAD; st.sparkle = 0;
+      }
+      if (prevPhase !== "spark" && phase === "spark") { st.flash = 1; spark(34); }
+      prevPhase = phase;
+      st.flash *= 0.93;
+
+      st.extra += (st.target - st.extra) * 0.14;
+      if (now - lastDraw < 32) return;
+      lastDraw = now;
+      draw(now);
+    }
+    function start() {
+      if (running) return;
+      running = true; t0 = performance.now();
+      rafId = requestAnimationFrame(tick);
+    }
+    function stop() {
+      running = false;
+      cancelAnimationFrame(rafId);
+    }
+
+    if (REDUCED) {
+      st.extra = 0; st.sparkle = 0;
+      draw(performance.now());
+      return;
+    }
+    draw(performance.now());
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) start(); else stop();
+        });
+      }, { rootMargin: "140px" }).observe(cvs);
+    } else {
+      start();
+    }
+  }
+
+  /* ================================================================
+     Scroll story (GSAP only). Word masks for the manifesto.
+     ================================================================ */
+  function heroReveal() {
+    var tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+    tl.from(".brand", { y: -24, opacity: 0, duration: 1 }, 0.1)
+      .from(".h-line > span", { yPercent: 116, duration: 1.3, stagger: 0.14 }, 0.25)
+      .from(".hero-sub", { y: 26, opacity: 0, duration: 1 }, 0.8)
+      .from(".badge", { y: 18, opacity: 0, duration: 0.9 }, 1);
+    gsap.to(".hero-in", {
+      yPercent: -10, opacity: 0.35, ease: "none",
+      scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true }
+    });
+  }
+
+  function splitWords(el) {
+    if (el.dataset.split) return;
+    el.dataset.split = "1";
+    var invWords = Array.prototype.slice.call(el.querySelectorAll(".inv"))
+      .map(function (n) { return n.textContent.trim(); });
+    var text = el.textContent.split(/\s+/).filter(Boolean);
+    el.textContent = "";
+    var frag = document.createDocumentFragment();
+    text.forEach(function (w, i) {
+      var mask = document.createElement("span");
+      mask.className = "wm";
+      var inner = document.createElement("span");
+      inner.className = "w" + (invWords.indexOf(w.replace(/[.,;:!?]/g, "")) >= 0 || invWords.indexOf(w) >= 0 ? " inv" : "");
+      inner.textContent = w;
+      mask.appendChild(inner);
+      frag.appendChild(mask);
+      if (i < text.length - 1) frag.appendChild(document.createTextNode(" "));
+    });
+    el.appendChild(frag);
+  }
+
+  function manifestoStory() {
+    var lines = Array.prototype.slice.call(document.querySelectorAll(".m-line"));
+    if (!lines.length) return;
+    lines.forEach(splitWords);
+    var tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: ".manifesto",
+        start: "top top",
+        end: "+=" + (lines.length * 620),
+        pin: true,
+        scrub: 0.7,
+        anticipatePin: 1
+      },
+      defaults: { ease: "power3.out" }
+    });
+    lines.forEach(function (line, i) {
+      var words = line.querySelectorAll(".w");
+      if (words.length) {
+        gsap.set(words, { yPercent: 114 });
+        tl.to(words, { yPercent: 0, stagger: 0.028, duration: 0.5 }, i * 0.92 + 0.02);
+      }
+      if (i > 0) tl.to(lines[i - 1], { opacity: 0.26, duration: 0.4 }, i * 0.92 + 0.12);
+    });
+    tl.to({}, { duration: 0.6 });
+  }
+
+  function revealPrinciples() {
+    document.querySelectorAll(".rule").forEach(function (rule) {
+      gsap.from(rule, {
+        opacity: 0, y: 42, duration: 1, ease: "power3.out",
+        scrollTrigger: { trigger: rule, start: "top 88%" }
+      });
+    });
+    gsap.from(".principles .scene-label", {
+      opacity: 0, y: 18, duration: 0.9, ease: "power3.out",
+      scrollTrigger: { trigger: ".principles", start: "top 88%" }
+    });
+  }
+
+  function revealHands() {
+    gsap.from(".hands-head", {
+      opacity: 0, y: 28, duration: 1.1, ease: "power3.out",
+      scrollTrigger: { trigger: ".hands", start: "top 80%" }
+    });
+    gsap.from(".h-frame", {
+      opacity: 0, y: 56, duration: 1.4, ease: "power3.out",
+      scrollTrigger: { trigger: ".h-frame", start: "top 92%" }
+    });
+    gsap.from(".hands-cap", {
+      opacity: 0, duration: 1.4, delay: 0.25,
+      scrollTrigger: { trigger: ".h-frame", start: "top 66%" }
+    });
+    gsap.to(".h-frame", {
+      yPercent: -4, ease: "none",
+      scrollTrigger: { trigger: ".hands", start: "top bottom", end: "bottom top", scrub: true }
+    });
+  }
+
+  function closeStory() {
+    gsap.from(".close-title", {
+      opacity: 0, y: 36, duration: 1.2, ease: "power3.out",
+      scrollTrigger: { trigger: ".close", start: "top 72%" }
+    });
+    gsap.from(".close-sub", {
+      opacity: 0, duration: 1, delay: 0.2,
+      scrollTrigger: { trigger: ".close", start: "top 66%" }
+    });
+    gsap.from(".close-rule", {
+      scaleX: 0, transformOrigin: "50% 50%", duration: 1.5, ease: "power4.out",
+      scrollTrigger: { trigger: ".close", start: "top 58%" }
+    });
+    gsap.from(".foot", {
+      opacity: 0, duration: 1.2,
+      scrollTrigger: { trigger: ".close", start: "top 38%" }
+    });
+  }
+})();
+</script>
+</body>
+</html>
