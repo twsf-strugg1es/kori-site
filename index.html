@@ -26,6 +26,7 @@
   --glow-core: rgba(245, 241, 233, 0.16);
   --dot: rgba(245, 241, 233, 0.09);
   --dot-hot: rgba(245, 241, 233, 0.9);
+  --cursor-ring: rgba(245, 241, 233, 0.45);
   --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
   --mono: "JetBrains Mono", Consolas, "Courier New", monospace;
 
@@ -53,17 +54,17 @@ img { max-width: 100%; display: block; }
 
 .wrap { max-width: 1240px; margin-inline: auto; padding-inline: var(--gutter); }
 
-/* ---------- ambient layers ---------- */
+/* ---------- ambient layers & cursor ---------- */
 #field {
   position: fixed; inset: 0; z-index: 0;
   width: 100%; height: 100%; pointer-events: none;
 }
 #glow {
-  position: fixed; inset: 0; z-index: 3; pointer-events: none; opacity: 0;
+  position: fixed; top: 0; left: 0; width: 0; height: 0; z-index: 3; pointer-events: none; opacity: 0;
   will-change: transform;
 }
 #glow::before {
-  content: ""; position: absolute; top: calc(50% - 380px); left: calc(50% - 380px);
+  content: ""; position: absolute; top: -380px; left: -380px;
   width: 760px; height: 760px; border-radius: 50%;
   background: radial-gradient(circle at center, var(--glow-core) 0%, transparent 66%);
 }
@@ -71,17 +72,46 @@ html.no-pointer-glow #glow, html.rm #glow, html.rm #cursor { display: none; }
 
 #cursor {
   position: fixed; top: 0; left: 0; z-index: 60; pointer-events: none;
-  opacity: 0; transition: opacity 0.4s var(--ease);
+  opacity: 0; transition: opacity 0.3s var(--ease);
 }
+html.fine-pointer, html.fine-pointer * { cursor: none !important; }
 html.fine-pointer #cursor.is-on { opacity: 1; }
-.c-dot, .c-ring, .c-tr {
+.c-dot, .c-ring {
   position: absolute; top: 0; left: 0; border-radius: 50%;
-  will-change: transform;
+  pointer-events: none;
 }
 .c-dot { width: 6px; height: 6px; background: var(--ink); }
-.c-ring { width: 38px; height: 38px; border: 1px solid rgba(245, 241, 233, 0.5); }
-.c-tr { background: var(--ink); }
+.c-ring {
+  width: 38px; height: 38px;
+  border: 1px solid var(--cursor-ring);
+  will-change: transform;
+}
 html:not(.fine-pointer) #cursor { display: none; }
+
+/* ---------- preloader ---------- */
+#loader {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.5s var(--ease);
+}
+#loader.is-done {
+  opacity: 0;
+  pointer-events: none;
+}
+.loader-k {
+  font-family: var(--serif);
+  font-size: clamp(64px, 8vw, 96px);
+  color: var(--ink);
+  line-height: 1;
+  user-select: none;
+  animation: loaderBreathe 2s ease-in-out infinite;
+}
+@keyframes loaderBreathe {
+  0%, 100% { opacity: 0.32; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1); }
+}
+html.rm #loader, html.no-js #loader { display: none; }
 
 /* ---------- brand ---------- */
 .brand { position: absolute; top: 0; left: 0; right: 0; z-index: 40; }
@@ -90,11 +120,10 @@ html:not(.fine-pointer) #cursor { display: none; }
   padding-block: clamp(20px, 3.4vh, 34px);
 }
 .brand-link {
-  display: inline-flex; align-items: center; gap: 12px;
+  display: inline-flex; align-items: center;
   will-change: transform;
 }
-.brand-k { font-size: 30px; line-height: 1; display: inline-block; transform: translateY(-3px); }
-.brand-word { font-family: var(--mono); font-size: 14px; letter-spacing: 0.02em; }
+.brand-word { font-family: var(--mono); font-size: 14px; letter-spacing: 0.04em; }
 .brand-side { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
 
 /* ---------- hero ---------- */
@@ -108,13 +137,14 @@ html:not(.fine-pointer) #cursor { display: none; }
 .hero-copy { max-width: 1100px; }
 h1 {
   font-size: clamp(52px, 8.2vw, 124px);
-  line-height: 0.98;
+  line-height: 1.08;
   letter-spacing: -0.015em;
   overflow-wrap: break-word;
+  text-wrap: balance;
   min-width: 0;
 }
 h1 em, em { font-style: italic; }
-.h-line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.h-line { display: block; overflow: hidden; padding-bottom: 0.05em; margin-bottom: 0; }
 .h-line > span { display: block; will-change: transform; }
 .hero-sub {
   margin-top: clamp(20px, 3.6vh, 34px);
@@ -147,24 +177,24 @@ h1 em, em { font-style: italic; }
 }
 
 /* ---------- manifesto ---------- */
-.manifesto { position: relative; z-index: 1; padding-block: clamp(50px, 8vh, 90px) 0; }
+.manifesto { position: relative; z-index: 1; padding-block: clamp(40px, 6vh, 80px) 0; }
 .manifesto-in {
   min-height: 100svh;
   display: flex; flex-direction: column; align-items: flex-start;
   justify-content: center;
-  gap: clamp(30px, 5.4vh, 62px);
-  padding-block: clamp(30px, 5vh, 60px);
+  gap: clamp(20px, 3.6vh, 42px);
+  padding-block: clamp(20px, 3.8vh, 44px);
 }
 .m-line {
-  font-size: clamp(26px, min(4.6vw, 7vh), 62px);
-  line-height: 1.1;
+  font-size: clamp(24px, min(4.2vw, 5.6vh), 52px);
+  line-height: 1.18;
   letter-spacing: -0.01em;
-  max-width: 17ch;
+  max-width: clamp(20ch, 26vw, 32ch);
 }
-.m-line.right { align-self: flex-end; text-align: right; }
-.m-line.center { align-self: center; text-align: center; max-width: 19ch; }
+.m-line.right { align-self: flex-end; text-align: right; max-width: clamp(22ch, 30vw, 36ch); }
+.m-line.center { align-self: center; text-align: center; max-width: clamp(24ch, 32vw, 38ch); }
 .m-line .inv { background: var(--ink); color: var(--bg); padding: 0 0.14em; }
-.wm { display: inline-block; overflow: hidden; vertical-align: bottom; }
+.wm { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.04em; margin-bottom: -0.04em; }
 .wm .w { display: inline-block; will-change: transform; }
 
 /* ---------- principles ---------- */
@@ -235,10 +265,12 @@ html.js .hands-pre { display: none; }
 .close-mid { text-align: center; margin-block: auto; }
 .close-title {
   font-size: clamp(44px, 7.4vw, 112px);
-  letter-spacing: -0.015em; line-height: 1;
-  overflow-wrap: break-word; min-width: 0;
+  letter-spacing: -0.015em; line-height: 1.05;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+  min-width: 0;
 }
-.close-sub { margin-top: 20px; font-family: var(--mono); font-size: 13px; color: var(--ink-faint); }
+.close-sub { margin-top: clamp(28px, 4.4vh, 44px); font-family: var(--mono); font-size: 13px; color: var(--ink-faint); }
 .close-rule { width: min(460px, 70vw); height: 1px; margin: clamp(28px, 6vh, 60px) auto 0; background: var(--line); }
 .foot {
   width: 100%;
@@ -266,14 +298,17 @@ html.js .hands-pre { display: none; }
 </head>
 <body>
 
+<div id="loader" aria-hidden="true">
+  <span class="loader-k">k.</span>
+</div>
+
 <canvas id="field" aria-hidden="true"></canvas>
 <div id="glow" aria-hidden="true"></div>
-<div id="cursor" aria-hidden="true"><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-tr"></span><span class="c-dot"></span><span class="c-ring"></span></div>
+<div id="cursor" aria-hidden="true"><span class="c-dot"></span><span class="c-ring"></span></div>
 
 <header class="brand wrap">
   <div class="brand-in">
     <a class="brand-link" href="#top" data-mag aria-label="Kori, back to top">
-      <span class="brand-k" aria-hidden="true">k</span>
       <span class="brand-word">kori</span>
     </a>
     <span class="brand-side">the ai era needs meaning</span>
@@ -609,6 +644,25 @@ const KORI_HANDS = {
     } catch (e) { gsapOK = false; }
   }
 
+  var tStart = performance.now();
+  function dismissLoader(cb) {
+    var loader = document.getElementById("loader");
+    if (!loader || REDUCED) {
+      if (loader) loader.style.display = "none";
+      if (cb) cb();
+      return;
+    }
+    var elapsed = performance.now() - tStart;
+    var wait = Math.max(0, 500 - elapsed);
+    setTimeout(function () {
+      loader.classList.add("is-done");
+      setTimeout(function () {
+        loader.style.display = "none";
+        if (cb) cb();
+      }, 500);
+    }, wait);
+  }
+
   /* ================================================================
      Boot: paint at once, no hidden content. If GSAP is present and
      motion is allowed, layer the scroll story on top.
@@ -619,8 +673,10 @@ const KORI_HANDS = {
     maybeRegisterGsap();
     initCursor();
     initHands();
+    dismissLoader(function () {
+      if (gsapOK) heroReveal();
+    });
     if (gsapOK) {
-      heroReveal();
       manifestoStory();
       revealPrinciples();
       revealHands();
@@ -706,8 +762,8 @@ const KORI_HANDS = {
   requestAnimationFrame(fieldTick);
 
   /* ================================================================
-     Cursor: soft light that trails, a dot+ring that lags less,
-     magnetic type that leans toward the pointer.
+     Cursor: custom dot & ring locked directly to the pointer,
+     with ambient glow centered under coordinates.
      ================================================================ */
   function initCursor() {
     if (!FINE || REDUCED) return;
@@ -715,24 +771,22 @@ const KORI_HANDS = {
     var cursor = document.getElementById("cursor");
     var dot = cursor.querySelector(".c-dot");
     var ring = cursor.querySelector(".c-ring");
-    var trail = Array.prototype.slice.call(cursor.querySelectorAll(".c-tr")).map(function (el, i) {
-      var s = 5 * (1 - i / 12);
-      el.style.width = s.toFixed(1) + "px";
-      el.style.height = s.toFixed(1) + "px";
-      el.style.opacity = (0.5 - i * 0.055).toFixed(2);
-      return { el: el, x: 0, y: 0 };
-    });
     var px = window.innerWidth / 2, py = window.innerHeight / 2;
-    var gx = px, gy = py, dx = px, dy = py, rx = px, ry = py;
+    var rx = px, ry = py;
     var scale = 1, scaleT = 1, seen = false;
 
     window.addEventListener("pointermove", function (e) {
-      moss.mx = e.clientX; moss.my = e.clientY;
       px = e.clientX; py = e.clientY;
-      if (!seen) { seen = true; cursor.classList.add("is-on");
-        trail.forEach(function (t) { t.x = px; t.y = py; });
-        dx = px; dy = py; rx = px; ry = py;
+      moss.mx = px; moss.my = py;
+      if (!seen) {
+        seen = true;
+        cursor.classList.add("is-on");
+        rx = px; ry = py;
       }
+      /* Instant direct lock under cursor — 0 lag, exact coordinates */
+      dot.style.transform = "translate3d(" + (px - 3) + "px," + (py - 3) + "px, 0)";
+      glow.style.transform = "translate3d(" + px + "px," + py + "px, 0)";
+      glow.style.opacity = "1";
       fieldDirty = true;
     }, { passive: true });
 
@@ -745,21 +799,11 @@ const KORI_HANDS = {
 
     (function cursorTick() {
       requestAnimationFrame(cursorTick);
-      gx += (px - gx) * 0.42; gy += (py - gy) * 0.42;
-      dx += (px - dx) * 0.45;  dy += (py - dy) * 0.45;
-      rx += (px - rx) * 0.26;  ry += (py - ry) * 0.26;
-      scale += (scaleT - scale) * 0.18;
-      var prevX = dx, prevY = dy, t, f;
-      for (var i = 0; i < trail.length; i++) {
-        t = trail[i]; f = 0.62 - i * 0.055;
-        t.x += (prevX - t.x) * f; t.y += (prevY - t.y) * f;
-        prevX = t.x; prevY = t.y;
-        t.el.style.transform = "translate(" + (t.x - parseFloat(t.el.style.width) / 2) + "px," + (t.y - parseFloat(t.el.style.height) / 2) + "px)";
-      }
-      dot.style.transform = "translate(" + (dx - 3) + "px," + (dy - 3) + "px)";
-      ring.style.transform = "translate(" + (rx - 19) + "px," + (ry - 19) + "px) scale(" + scale + ")";
-      glow.style.transform = "translate(" + (gx - window.innerWidth / 2) + "px," + (gy - window.innerHeight / 2) + "px)";
-      glow.style.opacity = "1";
+      if (!seen) return;
+      rx += (px - rx) * 0.35;
+      ry += (py - ry) * 0.35;
+      scale += (scaleT - scale) * 0.2;
+      ring.style.transform = "translate3d(" + (rx - 19) + "px," + (ry - 19) + "px, 0) scale(" + scale + ")";
     })();
 
     initMagnetic();
@@ -1108,12 +1152,12 @@ const KORI_HANDS = {
   function revealPrinciples() {
     document.querySelectorAll(".rule").forEach(function (rule) {
       gsap.from(rule, {
-        opacity: 0, y: 42, duration: 1, ease: "power3.out",
+        opacity: 0, y: 22, duration: 1, ease: "power3.out",
         scrollTrigger: { trigger: rule, start: "top 88%" }
       });
     });
     gsap.from(".principles .scene-label", {
-      opacity: 0, y: 18, duration: 0.9, ease: "power3.out",
+      opacity: 0, y: 12, duration: 0.9, ease: "power3.out",
       scrollTrigger: { trigger: ".principles", start: "top 88%" }
     });
   }
@@ -1139,12 +1183,12 @@ const KORI_HANDS = {
 
   function closeStory() {
     gsap.from(".close-title", {
-      opacity: 0, y: 36, duration: 1.2, ease: "power3.out",
+      opacity: 0, y: 20, duration: 1.2, ease: "power3.out",
       scrollTrigger: { trigger: ".close", start: "top 72%" }
     });
     gsap.from(".close-sub", {
-      opacity: 0, duration: 1, delay: 0.2,
-      scrollTrigger: { trigger: ".close", start: "top 66%" }
+      opacity: 0, y: 12, duration: 1, delay: 0.15,
+      scrollTrigger: { trigger: ".close", start: "top 70%" }
     });
     gsap.from(".close-rule", {
       scaleX: 0, transformOrigin: "50% 50%", duration: 1.5, ease: "power4.out",
