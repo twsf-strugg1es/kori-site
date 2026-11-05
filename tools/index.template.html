@@ -598,11 +598,10 @@ html.js .hands-pre { display: none; }
     var dpr = Math.min(2, window.devicePixelRatio || 1);
 
     var monoStack = getComputedStyle(document.body).getPropertyValue("--mono") || "monospace";
-    /* luminance fill: lit skin dense, shadow air; silhouette bright */
+    /* per-char brightness: silhouette edges near-full, stipple levels graded */
     var charA = {
       "|": 0.95, "-": 0.95, "/": 0.95, "\\": 0.95,
-      ".": 0.34, ":": 0.42, ";": 0.5, "=": 0.58, "+": 0.66,
-      "*": 0.74, "#": 0.82, "%": 0.9, "@": 0.96
+      ".": 0.25, ":": 0.4, ";": 0.55, "+": 0.7, "#": 0.85
     };
 
     /* pre-renderEach half once per size: per-char brightness by density */

@@ -1,9 +1,10 @@
 /**
- * Kori — ASCII hands generator v6 (engraved hands).
+ * Kori — ASCII hands generator v7 (five-level stipple engraving).
  * Samples the Creation of Adam hand detail (public domain, Wikimedia Commons)
  * tight on the two hands. A closed skin silhouette in directional glyphs holds
- * the shape, long interior creases describe the fingers, and a gamma-graded
- * luminance fill gives the hands body without saturating them into blobs.
+ * the shape, 2×-supersampled structural edges describe knuckles and creases,
+ * and a five-level stipple fill (.:;+#) gives the hands body while keeping
+ * interior form readable — never a solid bright blob.
  * Splits at the fingertip gap into LEFT/RIGHT halves for runtime animation.
  *
  * Output: kori-ascii.txt (preview), kori-ascii.js (snippet)
@@ -20,11 +21,13 @@ const SRC = process.argv[2] ? path.resolve(process.argv[2]) : path.join(dir, "ad
 const COLS = 143;
 const SRC_CROP = { x: 460, y: 250, w: 470, h: 280 };
 const CELL_ASPECT = 0.6;   // monospace char width ≈ 0.6 * font-size
-const FILL_BLUR = 3;       // blur passes on luminance for the tonal fill
-const FILL_GAMMA = 1.4;    // >1 compresses highlights so lit skin keeps form
-const EDGE_PCT = 0.87;     // keep structural edges (knuckles, finger gaps)
-const EDGE_MIN = 6;        // drop tiny edge fragments
+const HX = 2;              // edge supersample factor
+const FILL_BLUR = 5;       // blur passes on luminance for the tonal fill
+const FILL_GAMMA = 0.9;    // <1 opens shadows so form reads within the ramp
+const EDGE_PCT = 0.9;      // keep structural edges (knuckles, finger gaps)
+const EDGE_MIN = 14;       // drop tiny edge fragments (at HX resolution)
 const MIN_SKIN = 80;       // drop mask components smaller than this (cracks)
+const RAMP = [".", ":", ";", "+", "#"]; // five stipple levels, dark → dense
 
 // ---- Load ------------------------------------------------------------------
 const img = await Jimp.read(SRC);
@@ -33,7 +36,7 @@ const { width: IW, data } = img.bitmap;
 const ROWS = Math.round(COLS * (SRC_CROP.h / SRC_CROP.w) * CELL_ASPECT);
 
 /** average luminance + skin-warmth mask per cell */
-function sampleGrid(crop, cols, rows) {
+function sampleGrid(crop, cols, rows, step = 1) {
   const L = new Float32Array(cols * rows);
   const M = new Float32Array(cols * rows);
   for (let r = 0; r < rows; r++) {
@@ -43,8 +46,8 @@ function sampleGrid(crop, cols, rows) {
       const x0 = crop.x + Math.floor((c * crop.w) / cols);
       const x1 = crop.x + Math.floor(((c + 1) * crop.w) / cols);
       let sl = 0, sw = 0, n = 0;
-      for (let y = y0; y < y1; y += 2)
-        for (let x = x0; x < x1; x += 2) {
+      for (let y = y0; y < y1; y += step)
+        for (let x = x0; x < x1; x += step) {
           const i = (y * IW + x) * 4;
           sl += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
           sw += data[i] - data[i + 2];
@@ -76,6 +79,23 @@ function blur(F, cols, rows, passes = 1) {
     src = dst;
   }
   return src;
+}
+
+function median3(F, cols, rows) {
+  const out = new Float32Array(F.length);
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++) {
+      const v = [];
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) {
+          const rr = Math.min(rows - 1, Math.max(0, r + dr));
+          const cc = Math.min(cols - 1, Math.max(0, c + dc));
+          v.push(F[rr * cols + cc]);
+        }
+      v.sort((a, b) => a - b);
+      out[r * cols + c] = v[4];
+    }
+  return out;
 }
 
 function sobel(F, cols, rows, sx = 1) {
@@ -138,7 +158,8 @@ const M = filterComponents(
   MIN_SKIN
 );
 const Mb = blur(M, COLS, ROWS, 1);
-const Lb = blur(L, COLS, ROWS, FILL_BLUR);
+const Lm = median3(L, COLS, ROWS);
+const Lb = blur(Lm, COLS, ROWS, FILL_BLUR);
 const ms = sobel(M0, COLS, ROWS, AX);
 
 // ---- Silhouette: interior cells only, so the crop edges stay open ----------
@@ -151,26 +172,35 @@ for (let r = 1; r < ROWS - 1; r++)
     if (nb.some((v) => !v)) bound[i] = 1;
   }
 
-// ---- Structural edges (knuckles, finger separations) -----------------------
-const lg = sobel(Lb, COLS, ROWS, AX);
-const gmag = Float32Array.from(lg.gx, (_, i) => Math.hypot(lg.gx[i], lg.gy[i]));
+// ---- Structural edges, 2× supersampled (knuckles, creases, finger gaps) ----
+const hc = COLS * HX, hr = ROWS * HX;
+const hi = sampleGrid(SRC_CROP, hc, hr);
+const hl = blur(median3(hi.L, hc, hr), hc, hr, 2);
+const hg = sobel(hl, hc, hr, AX);
+const gm = Float32Array.from(hg.gx, (_, i) => Math.hypot(hg.gx[i], hg.gy[i]));
 
-const vals = [];
-for (let i = 0; i < gmag.length; i++) if (M[i] && !bound[i]) vals.push(gmag[i]);
-vals.sort((a, b) => a - b);
-const thr = vals[Math.floor(vals.length * EDGE_PCT)] || 0;
+const hv = [];
+for (let i = 0; i < gm.length; i++) if (hi.M[i] > 0.55) hv.push(gm[i]);
+hv.sort((a, b) => a - b);
+const thr = hv[Math.floor(hv.length * EDGE_PCT)] || 0;
 
-let em = new Uint8Array(COLS * ROWS);
-for (let i = 0; i < gmag.length; i++)
-  if (M[i] && !bound[i] && gmag[i] > thr) em[i] = 1;
-em = filterComponents(em, COLS, ROWS, EDGE_MIN);
+let em = new Uint8Array(hc * hr);
+for (let i = 0; i < gm.length; i++)
+  if (hi.M[i] > 0.55 && gm[i] > thr) em[i] = 1;
+em = filterComponents(em, hc, hr, EDGE_MIN);
 
+// one glyph per display cell: strongest kept 2×2 supersample edge
 const edge = [];
 for (let r = 0; r < ROWS; r++) {
   const row = [];
   for (let c = 0; c < COLS; c++) {
-    const i = r * COLS + c;
-    row.push(em[i] ? glyph(lg.gx[i], lg.gy[i]) : " ");
+    let bi = -1, bv = 0;
+    for (let dr = 0; dr < HX; dr++)
+      for (let dc = 0; dc < HX; dc++) {
+        const i = (r * HX + dr) * hc + (c * HX + dc);
+        if (em[i] && gm[i] > bv) { bv = gm[i]; bi = i; }
+      }
+    row.push(bi >= 0 ? glyph(hg.gx[bi], hg.gy[bi]) : " ");
   }
   edge.push(row);
 }
@@ -179,8 +209,7 @@ for (let r = 0; r < ROWS; r++) {
 const ls = [];
 for (let i = 0; i < Lb.length; i++) if (Mb[i] > 0.5) ls.push(Lb[i]);
 ls.sort((a, b) => a - b);
-const lo = ls[Math.floor(ls.length * 0.04)], hiV = ls[Math.floor(ls.length * 0.96)];
-const RAMP = " .:;=+*#%@";
+const lo = ls[Math.floor(ls.length * 0.02)], hiV = ls[Math.floor(ls.length * 0.98)];
 
 // ---- Compose ----------------------------------------------------------------
 const grid = [];
@@ -192,8 +221,8 @@ for (let r = 0; r < ROWS; r++) {
     if (!M[i]) { line += " "; continue; }
     if (edge[r][c] !== " ") { line += edge[r][c]; continue; }
     const t = Math.max(0, Math.min(1, (Lb[i] - lo) / (hiV - lo)));
-    const k = Math.max(1, Math.min(9, Math.round(Math.pow(t, FILL_GAMMA) * 9)));
-    line += RAMP[k];
+    const k = Math.max(1, Math.min(RAMP.length, Math.round(Math.pow(t, FILL_GAMMA) * RAMP.length)));
+    line += RAMP[k - 1];
   }
   grid.push(line.replace(/\s+$/, ""));
 }
